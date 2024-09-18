@@ -6,14 +6,14 @@ from Com import Com
 
 class Process(Thread):
     
-    def __init__(self,name,npProcess): #Pas npProcess?
+    def __init__(self,name, nbProcess):  #Pas npProcess?
         Thread.__init__(self)
 
-        self.com = Com()
+        self.com = Com(nbProcess)
         
-        #self.nbProcess = self.com.getNbProcess()
+        self.nbProcess = self.com.getNbProcess()
 
-        #self.myId = self.com.getMyId()
+        self.myId = self.com.getMyId()
         self.setName(name)
 
 
@@ -24,7 +24,7 @@ class Process(Thread):
     def run(self):
         loop = 0
         while self.alive:
-            print(self.getName() + " Loop: " + str(loop))
+            print(self.getName() + " Loop: " + str(loop) + " id:" + str(self.myId))
             sleep(1) 
             """
             if self.getName() == "P0":
