@@ -17,6 +17,8 @@ class Com():
         self.horloge = 0
         self.lockHorloge = Lock()
         
+        self.mailbox = MailBox()
+        
     def getNbProcess(self):
         return self.npProcess
         
@@ -30,3 +32,20 @@ class Com():
     def getClock(self):
         with self.lockHorloge:
             return self.horloge
+            
+class MailBox():
+    def __init__(self):
+        self.empty = True
+        self.container = []
+        self.lockContainer = Lock()
+    
+    def isEmpty(self):
+        return self.empty #mutex?
+        
+    def getMsg(self):
+        with self.lockContainer:
+            return self.container.pop(0)
+            
+    def addMsg(self, msg):
+        with self.lockContainer:
+            self.container.append(msg)

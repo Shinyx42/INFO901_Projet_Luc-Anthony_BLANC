@@ -52,7 +52,7 @@ class Process(Thread):
 
             if self.getName() == "P1":
                 if ! self.com.mailbox.isEmpty():
-                    self.com.mailbox.getMessage()
+                    self.com.mailbox.getMsg()
                     self.com.recevFromSync(msg, 0)
 
                     self.com.synchronize()
