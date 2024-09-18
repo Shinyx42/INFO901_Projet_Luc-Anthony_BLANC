@@ -25,7 +25,10 @@ class Process(Thread):
         loop = 0
         while self.alive:
             print(self.getName() + " Loop: " + str(loop) + " id:" + str(self.myId))
-            sleep(1) 
+            print(self.getName() + " Horloge: " + str(self.com.getClock()))
+            sleep(1)
+            self.com.inc_clock()
+            self.com.inc_clock()
             """
             if self.getName() == "P0":
                 self.com.sendTo("j'appelle 2 et je te recontacte après", 1)

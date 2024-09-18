@@ -15,9 +15,18 @@ class Com():
         Com.nbProcessCreated +=1
         
         self.horloge = 0
+        self.lockHorloge = Lock()
         
     def getNbProcess(self):
         return self.npProcess
         
     def getMyId(self):
         return self.myId
+        
+    def inc_clock(self, val=0):
+        with self.lockHorloge:
+            self.horloge = max(val,self.horloge)+1
+            
+    def getClock(self):
+        with self.lockHorloge:
+            return self.horloge
