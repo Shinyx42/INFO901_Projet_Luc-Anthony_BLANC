@@ -26,9 +26,14 @@ class Process(Thread):
         while self.alive:
             print(self.getName() + " Loop: " + str(loop) + " id:" + str(self.myId))
             print(self.getName() + " Horloge: " + str(self.com.getClock()))
+            while not self.com.mailbox.isEmpty():
+                msg=self.com.mailbox.getMsg()
+                print(self.getName() + " get " + msg.getMessage() + " from " + str(msg.getSender()))
             sleep(1)
             self.com.inc_clock()
             self.com.inc_clock()
+            if self.getName() == "P1":
+                self.com.broadcast("Hello!")
             """
             if self.getName() == "P0":
                 self.com.sendTo("j'appelle 2 et je te recontacte après", 1)

@@ -1,6 +1,7 @@
 from pyeventbus3.pyeventbus3 import *
 from Messages import *
 from threading import Lock
+from Debug import log
 
 class Com():
     
@@ -33,14 +34,26 @@ class Com():
         with self.lockHorloge:
             return self.horloge
             
+    def broadcast(self, o):
+        self.inc_clock()
+        msg=BroadcastMessage(o,self.getClock(),self.myId)
+        log(str(self.getMyId()) + " broadcast: " + o + " estampile: " + str(msg.getEstampille()),3)
+        PyBus.Instance().post(msg)
+    
+    @subscribe(threadMode = Mode.PARALLEL, onEvent=BroadcastMessage)
+    def onBroadcast(self, m):
+        if not m.isSender(self.getMyId()):
+            log(str(self.getMyId()) + ' Processes broadcast: ' + m.getMessage() + " estampile: " + str(m.getEstampille()) + " from " + str(m.getSender()),3)
+            self.inc_clock(m.getEstampille())
+            self.mailbox.addMsg(m)
+            
 class MailBox():
     def __init__(self):
-        self.empty = True
         self.container = []
         self.lockContainer = Lock()
     
     def isEmpty(self):
-        return self.empty #mutex?
+        return self.container == [] #mutex?
         
     def getMsg(self):
         with self.lockContainer:
@@ -49,3 +62,4 @@ class MailBox():
     def addMsg(self, msg):
         with self.lockContainer:
             self.container.append(msg)
+            log(self.container, 4)
