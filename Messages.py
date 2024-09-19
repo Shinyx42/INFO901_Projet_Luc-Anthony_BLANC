@@ -36,3 +36,7 @@ class Token():
         self.nextId=nextId
     def haveToken(self, myId):
         return myId==self.nextId
+
+class MessageSync(Message):
+    def __init__(self,estampille,sender):
+        super().__init__("sync", estampille,sender)

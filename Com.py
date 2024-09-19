@@ -20,6 +20,7 @@ class Com():
         self.lockHorloge = Lock()
         self.haveToken = False
         self.waitToken = False
+        self.cmptSync = 0
         
         self.mailbox = MailBox()
         
@@ -93,7 +94,19 @@ class Com():
             self.sendToken()
             
     def synchronize(self):
-        pass
+        self.inc_clock()
+        PyBus.Instance().post(MessageSync(self.getClock(),self.getMyId()))
+        while self.alive and self.cmptSync < self.npProcess: #TOOD
+            sleep(0.5)
+        log(str(self.getMyId())+" is synchronized!",3)
+        self.cmptSync -= self.npProcess
+        
+    @subscribe(threadMode = Mode.PARALLEL, onEvent=MessageSync)
+    def onSync(self, s):
+        self.cmptSync +=1
+        log(str(self.getMyId())+" receive synchro from "+str(s.getSender())+" cmpt="+str(self.cmptSync),3)
+        self.inc_clock(s.getEstampille()) 
+        
     def broadcastSync(self, o,sender):
         pass
     def sendToSync(self, o, to):

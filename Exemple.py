@@ -87,7 +87,8 @@ class Process(Thread):
                     msg = self.com.mailbox.getMsg();
                     print(str(msg.getSender())+" à eu le jeton en premier")
                 self.com.releaseSC()
-                              
+            if self.getName() == "P3":
+                self.com.synchronize()
             loop+=1
         print(self.getName() + " stopped")
 
