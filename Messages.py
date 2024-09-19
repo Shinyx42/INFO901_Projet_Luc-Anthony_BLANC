@@ -20,6 +20,10 @@ class BroadcastMessage(Message):
     def __init__(self, message, estampille, sender):
         super().__init__(message, estampille, sender)
         
+class BroadcastMessageSyncro(Message):
+    def __init__(self, message, estampille, sender):
+        super().__init__(message, estampille, sender)
+        
 class MessageTo(Message):
     def __init__(self, message, estampille, sender, reciever):
         super().__init__(message, estampille, sender)

@@ -24,7 +24,7 @@ class Process(Thread):
     def run(self):
         loop = 0
         while self.alive:
-            msg = Message()
+            msg = Message() #A changer
             print(self.getName() + " Loop: " + str(loop) + " id:" + str(self.myId))
             print(self.getName() + " Horloge: " + str(self.com.getClock()))
             #while not self.com.mailbox.isEmpty():
@@ -35,6 +35,7 @@ class Process(Thread):
             self.com.inc_clock()
             if self.getName() == "P1":
                 self.com.broadcast("Hello!")
+            self.com.broadcastSync("Hello sync!", 3)
             self.com.sendTo("I'm "+self.getName()+" and I sendTo P1", 1)
             
             if self.getName() == "P0":

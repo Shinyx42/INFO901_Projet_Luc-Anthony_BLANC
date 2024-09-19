@@ -3,7 +3,7 @@ from Messages import *
 from threading import Lock
 from Debug import log
 from time import sleep
-
+#TODO: vérifier les message renvoyer
 class Com():
     
     nbProcessCreated = 0 #A Supprimer
@@ -21,6 +21,7 @@ class Com():
         self.haveToken = False
         self.waitToken = False
         self.cmptSync = 0
+        self.lockCmptSync = Lock()
         
         self.mailbox = MailBox()
         
@@ -96,19 +97,48 @@ class Com():
     def synchronize(self):
         self.inc_clock()
         PyBus.Instance().post(MessageSync(self.getClock(),self.getMyId()))
+        self.lockCmptSync.acquire()
         while self.alive and self.cmptSync < self.npProcess: #TOOD
+            self.lockCmptSync.release()
             sleep(0.5)
-        log(str(self.getMyId())+" is synchronized!",3)
+            self.lockCmptSync.acquire()
         self.cmptSync -= self.npProcess
+        assert(self.cmptSync>=0 or not self.alive)
+        self.lockCmptSync.release()
+        log(str(self.getMyId())+" is synchronized!",3)
         
     @subscribe(threadMode = Mode.PARALLEL, onEvent=MessageSync)
     def onSync(self, s):
+        self.lockCmptSync.acquire()
         self.cmptSync +=1
+        self.lockCmptSync.release()
         log(str(self.getMyId())+" receive synchro from "+str(s.getSender())+" cmpt="+str(self.cmptSync),3)
         self.inc_clock(s.getEstampille()) 
         
-    def broadcastSync(self, o,sender):
-        pass
+    def broadcastSync(self, o,sender): #A modifier
+        if self.getMyId() == sender:
+            self.inc_clock()
+            msg=BroadcastMessageSyncro(o,self.getClock(),self.myId)
+            log(str(self.getMyId()) + " broadcast syncro: " + o + " estampile: " + str(msg.getEstampille()),3)
+            PyBus.Instance().post(msg)
+            self.synchronize()
+            return msg
+        else:
+            while self.alive and not self.mailbox.haveMsgSyncro: #TOOD
+                sleep(0.5)
+            msg = self.mailbox.getMsgSyncro()
+            o = msg.getMessage()
+            self.synchronize()
+            return msg
+            
+        
+    @subscribe(threadMode = Mode.PARALLEL, onEvent=BroadcastMessageSyncro)
+    def onBroadcastSyncro(self, m):
+        if not m.isSender(self.getMyId()):
+            log(str(self.getMyId()) + ' Processes broadcast synchro: ' + m.getMessage() + " estampile: " + str(m.getEstampille()) + " from " + str(m.getSender()),3)
+            self.inc_clock(m.getEstampille())
+            self.mailbox.addMsgSyncro(m)
+            
     def sendToSync(self, o, to):
         pass
     def recevFromSync(self, msg, sender):
@@ -121,6 +151,8 @@ class MailBox():
     def __init__(self):
         self.container = []
         self.lockContainer = Lock()
+        self.msgSyncro = None
+        self.haveMsgSyncro = False
     
     def isEmpty(self):
         return self.container == [] #mutex?
@@ -133,3 +165,11 @@ class MailBox():
         with self.lockContainer:
             self.container.append(msg)
             log(self.container, 4)
+        
+    def addMsgSyncro(self, msg):
+        self.msgSyncro = msg
+        self.haveMsgSyncro = True
+        
+    def getMsgSyncro(self):
+        self.haveMsgSyncro = False
+        return self.msgSyncro
