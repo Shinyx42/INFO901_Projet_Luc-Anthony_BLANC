@@ -2,12 +2,13 @@ from pyeventbus3.pyeventbus3 import *
 from Messages import *
 from threading import Lock
 from Debug import log
+from time import sleep
 
 class Com():
     
     nbProcessCreated = 0 #A Supprimer
     def __init__(self, npProcess):
-        print("init com")
+        log("init com",3)
         PyBus.Instance().register(self, self)
         
         #A Modifier
@@ -17,8 +18,14 @@ class Com():
         
         self.horloge = 0
         self.lockHorloge = Lock()
+        self.haveToken = False
+        self.waitToken = False
         
         self.mailbox = MailBox()
+        
+        self.alive = True
+        if self.myId == npProcess-1:
+            self.sendToken()
         
     def getNbProcess(self):
         return self.npProcess
@@ -60,6 +67,43 @@ class Com():
             self.inc_clock(m.getEstampille())
             self.mailbox.addMsg(m)
             
+    def sendToken(self):
+        t = Token((self.myId+1)%self.npProcess)
+        if self.alive: #TOOD
+            PyBus.Instance().post(t)
+    
+    @subscribe(threadMode = Mode.PARALLEL, onEvent=Token)
+    def onToken(self, t):
+        if t.haveToken(self.getMyId()):
+            log(str(self.getMyId())+" has the token!",4)
+            if self.waitToken:
+                self.haveToken=True
+            else:
+                self.sendToken()
+                
+    def requestSC(self):
+        self.waitToken=True
+        while self.alive and not self.haveToken: #utiliser mutex + expt
+            sleep(0.5)
+            
+    def releaseSC(self):
+        self.waitToken=False
+        if self.haveToken:
+            self.haveToken=False
+            self.sendToken()
+            
+    def synchronize(self):
+        pass
+    def broadcastSync(self, o,sender):
+        pass
+    def sendToSync(self, o, to):
+        pass
+    def recevFromSync(self, msg, sender):
+        pass
+    
+    def stop(self):
+        self.alive = False
+
 class MailBox():
     def __init__(self):
         self.container = []

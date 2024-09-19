@@ -3,7 +3,7 @@ from threading import Lock, Thread
 from time import sleep
 
 from Com import Com
-
+from Messages import Message
 class Process(Thread):
     
     def __init__(self,name, nbProcess):  #Pas npProcess?
@@ -24,18 +24,19 @@ class Process(Thread):
     def run(self):
         loop = 0
         while self.alive:
+            msg = Message()
             print(self.getName() + " Loop: " + str(loop) + " id:" + str(self.myId))
             print(self.getName() + " Horloge: " + str(self.com.getClock()))
-            while not self.com.mailbox.isEmpty():
-                msg=self.com.mailbox.getMsg()
-                print(self.getName() + " get " + msg.getMessage() + " from " + str(msg.getSender()))
+            #while not self.com.mailbox.isEmpty():
+            #    msg=self.com.mailbox.getMsg()
+            #    print(self.getName() + " get " + msg.getMessage() + " from " + str(msg.getSender()))
             sleep(1)
             self.com.inc_clock()
             self.com.inc_clock()
             if self.getName() == "P1":
                 self.com.broadcast("Hello!")
             self.com.sendTo("I'm "+self.getName()+" and I sendTo P1", 1)
-            """
+            
             if self.getName() == "P0":
                 self.com.sendTo("j'appelle 2 et je te recontacte après", 1)
                 
@@ -57,7 +58,7 @@ class Process(Thread):
 
 
             if self.getName() == "P1":
-                if ! self.com.mailbox.isEmpty():
+                if not self.com.mailbox.isEmpty():
                     self.com.mailbox.getMsg()
                     self.com.recevFromSync(msg, 0)
 
@@ -86,12 +87,13 @@ class Process(Thread):
                     msg = self.com.mailbox.getMsg();
                     print(str(msg.getSender())+" à eu le jeton en premier")
                 self.com.releaseSC()
-                """               
+                              
             loop+=1
         print(self.getName() + " stopped")
 
     def stop(self):
         self.alive = False
+        self.com.stop()
         self.join()
 
     def waitStopped(self): #supprimer?

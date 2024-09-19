@@ -1,5 +1,5 @@
 class Message():
-    def __init__(self, message, estampille, sender):
+    def __init__(self, message="", estampille=0, sender=0):
         self.message=message
         self.estampille=estampille
         self.sender=sender
