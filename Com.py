@@ -18,8 +18,8 @@ class Com():
         
         self.horloge = 0
         self.lockHorloge = Lock()
-        self.haveToken = False
-        self.waitToken = False
+        self.haveToken = Lock()
+        self.waitToken = Lock()
         self.cmptSync = 0
         self.lockCmptSync = Lock()
         
@@ -71,30 +71,30 @@ class Com():
             
     def sendToken(self):
         t = Token((self.myId+1)%self.npProcess)
-        if self.alive: #TOOD
+        if self.alive:
             PyBus.Instance().post(t)
     
     @subscribe(threadMode = Mode.PARALLEL, onEvent=Token)
     def onToken(self, t):
         if t.haveToken(self.getMyId()):
+            if self.haveToken.locked():
+                self.haveToken.release()
             log(str(self.getMyId())+" has the token!",4)
-            if self.waitToken:
-                self.haveToken=True
-            else:
-                self.sendToken()
+            self.waitToken.acquire(timeout=4)
+            self.haveToken.acquire(timeout=4)
+            self.waitToken.release()
+            self.sendToken()
                 
     def requestSC(self):
-        self.waitToken=True
-        while self.alive and not self.haveToken: #utiliser mutex + expt
-            sleep(0.5)
+        self.waitToken.acquire(timeout=4)
+        self.haveToken.acquire(timeout=4)
             
     def releaseSC(self):
-        self.waitToken=False
-        if self.haveToken:
-            self.haveToken=False
-            self.sendToken()
+        if self.haveToken.locked() and self.waitToken.locked():
+            self.waitToken.release()
+            self.haveToken.release()
             
-    def synchronize(self):
+    def synchronize(self): #A corriger
         self.inc_clock()
         PyBus.Instance().post(MessageSync(self.getClock(),self.getMyId()))
         self.lockCmptSync.acquire()
