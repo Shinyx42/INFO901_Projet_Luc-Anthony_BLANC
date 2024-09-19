@@ -34,6 +34,7 @@ class Process(Thread):
             self.com.inc_clock()
             if self.getName() == "P1":
                 self.com.broadcast("Hello!")
+            self.com.sendTo("I'm "+self.getName()+" and I sendTo P1", 1)
             """
             if self.getName() == "P0":
                 self.com.sendTo("j'appelle 2 et je te recontacte après", 1)

@@ -46,6 +46,19 @@ class Com():
             log(str(self.getMyId()) + ' Processes broadcast: ' + m.getMessage() + " estampile: " + str(m.getEstampille()) + " from " + str(m.getSender()),3)
             self.inc_clock(m.getEstampille())
             self.mailbox.addMsg(m)
+    
+    def sendTo(self, o, to):
+        self.inc_clock()
+        message = MessageTo(o,self.getClock(),self.getMyId(),to)
+        log(str(self.getMyId()) + " sent: " + o + " estampile: " + str(message.getEstampille()) + " to " + str(to), 3)
+        PyBus.Instance().post(message)
+        
+    @subscribe(threadMode = Mode.PARALLEL, onEvent=MessageTo)
+    def onReceive(self, m):
+        if m.isReciever(self.getMyId()):
+            log(str(self.getMyId()) + ' Recieve: ' + m.getMessage() + " estampile: " + str(m.getEstampille()) + " from " + str(m.getSender()),3)
+            self.inc_clock(m.getEstampille())
+            self.mailbox.addMsg(m)
             
 class MailBox():
     def __init__(self):
