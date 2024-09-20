@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+
+<html lang="fr">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Documentation du Module Com</title>
+
+    <style>
+
+        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+
+        h1 { color: #333; }
+
+        h2 { color: #555; }
+
+        code { background-color: #f4f4f4; padding: 2px 4px; border-radius: 4px; }
+
+        pre { background-color: #f4f4f4; padding: 10px; border-radius: 5px; }
+
+        .method { margin-left: 20px; }
+
+    </style>
+
+</head>
+
+<body>
+
+    <h1>Documentation du Module Com</h1>
+
+    <p>Cette documentation fournit une vue d'ensemble des classes et méthodes disponibles dans le module <code>Com</code>.</p>
+
+
+
+    <h2>Classe <code>Com</code></h2>
+
+    <p>La classe <code>Com</code> gère la communication entre différents processus en utilisant un bus d'événements, des messages horodatés et un algorithme de passage de jeton pour la gestion des sections critiques.</p>
+
+
+	<h3>Attributs</h3>
+
+    <div class="method">
+		<h4><code>mailbox: MailBox</code></h4>
+		<p>Boîte aux lettres pour stocker les messages reçus.</p>
+	</div>
+
+    <h3>Méthodes</h3>
+
+    <div class="method">
+
+        <h4><code>__init__(self, npProcess: int)</code></h4>
+
+        <p>Initialise le processus de communication. Enregistre l'instance auprès du bus d'événements et configure les outils de synchronisation.</p>
+
+
+
+        <h4><code>initialize(self)</code></h4>
+
+        <p>Initialise le processus (choix d'un ID, synchronisation). <strong>Doit être appelée avant toutes les autres.</strong></p>
+
+
+
+        <h4><code>getNbProcess(self)</code></h4>
+
+        <p>Retourne le nombre de processus.</p>
+
+
+
+        <h4><code>getMyId(self)</code></h4>
+
+        <p>Retourne l'identifiant du processus actuel.</p>
+
+
+
+        <h4><code>inc_clock(self, val=0)</code></h4>
+
+        <p>Incrémente l'horloge logique du processus en tenant compte d'une valeur externe.</p>
+
+
+
+        <h4><code>getClock(self)</code></h4>
+
+        <p>Retourne la valeur de l'horloge logique du processus.</p>
+
+
+
+        <h4><code>broadcast(self, o: object)</code></h4>
+
+        <p>Diffuse un message à tous les processus avec un horodatage. Cette méthode peut être appelée par l'utilisateur.</p>
+
+
+
+        <h4><code>onBroadcast(self, m)</code></h4>
+
+        <p><strong>Méthode interne :</strong> Reçoit et traite un message diffusé par un autre processus. Ne doit pas être appelée directement par l'utilisateur.</p>
+
+
+
+        <h4><code>sendTo(self, o: object, to: int)</code></h4>
+
+        <p>Envoie un message direct à un autre processus.</p>
+
+
+
+        <h4><code>onReceive(self, m)</code></h4>
+
+        <p><strong>Méthode interne :</strong> Reçoit un message direct et l'ajoute à la boîte aux lettres. Ne doit pas être appelée directement par l'utilisateur.</p>
+
+
+
+        <h4><code>sendToken(self)</code></h4>
+
+        <p><strong>Méthode interne :</strong>Envoie le jeton au processus suivant. Cette méthode est gérée automatiquement.</p>
+
+
+
+        <h4><code>onToken(self, t)</code></h4>
+
+        <p><strong>Méthode interne :</strong> Traite la réception du jeton et gère la section critique. Ne doit pas être appelée directement par l'utilisateur.</p>
+
+
+
+        <h4><code>requestSC(self)</code></h4>
+
+        <p>Demande l'accès à la section critique (attente du jeton).</p>
+
+
+
+        <h4><code>releaseSC(self)</code></h4>
+
+        <p>Libère la section critique et passe le jeton.</p>
+
+
+
+        <h4><code>synchronize(self)</code></h4>
+
+        <p>Synchronise les processus.</p>
+
+
+
+        <h4><code>onSync(self, s)</code></h4>
+
+        <p><strong>Méthode interne :</strong> Reçoit un message de synchronisation et met à jour l'horloge. Ne doit pas être appelée directement par l'utilisateur.</p>
+
+
+
+        <h4><code>broadcastSync(self, o: object, sender): Message</code></h4>
+
+        <p>Diffuse un message en mode synchrone à tous les processus.</p>
+
+
+
+        <h4><code>onBroadcastSyncro(self, m)</code></h4>
+
+        <p><strong>Méthode interne :</strong> Traite la réception d'un message diffusé en mode synchrone. Ne doit pas être appelée directement par l'utilisateur.</p>
+
+
+
+        <h4><code>sendToSync(self, o: object, to: int)</code></h4>
+
+        <p>Envoie un message direct en mode synchrone à un autre processus.</p>
+
+
+
+        <h4><code>recevFromSync(self, sender): Message</code></h4>
+
+        <p>Traite la réception d'un message direct en mode synchrone. </p>
+
+
+
+        <h4><code>onMessageToSynchro(self, m)</code></h4>
+
+        <p><strong>Méthode interne :</strong> Traite la réception d'un message direct en mode synchrone. Ne doit pas être appelée directement par l'utilisateur.</p>
+
+
+
+        <h4><code>choseId(self)</code></h4>
+
+        <p>Choisit un identifiant unique pour le processus actuel en attendant que d'autres processus proposent leurs IDs, ne verifie pas les conflits. Cette méthode est appelée lors de l'initialisation.</p>
+
+
+
+        <h4><code>onChoseId(self, m)</code></h4>
+
+        <p><strong>Méthode interne :</strong> Traite la réception d'une proposition d'ID d'un autre processus et l'ajoute à la liste des IDs. Ne doit pas être appelée directement par l'utilisateur.</p>
+
+
+
+        <h4><code>stop(self)</code></h4>
+
+        <p>Arrête le processus et le marque comme inactif.</p>
+
+    </div>
+
+    <h2>Classe <code>Message</code></h2>
+    <p>La classe <code>Message</code> contient un message, un horodatage (estampille), et l'identifiant de l'expéditeur. Elle permet de gérer les messages échangés entre processus.</p>
+
+    <h3>Méthodes</h3>
+    <div class="method">
+        <h4><code>__init__(self, message="", estampille=0, sender=0)</code></h4>
+        <p>Initialise un message avec un contenu, un horodatage, et un identifiant d'expéditeur.</p>
+
+        <h4><code>getMessage(self)</code></h4>
+        <p>Retourne le contenu du message.</p>
+
+        <h4><code>getEstampille(self)</code></h4>
+        <p>Retourne l'horodatage (ou estampille) du message.</p>
+
+        <h4><code>isSender(self, sender: int)</code></h4>
+        <p>Vérifie si l'expéditeur du message correspond à l'identifiant fourni. </p>
+
+        <h4><code>getSender(self)</code></h4>
+        <p>Retourne l'identifiant de l'expéditeur du message.</p>
+    </div>
+
+</body>
+
+</html>

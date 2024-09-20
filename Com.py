@@ -7,8 +7,106 @@ from random import randrange
 
 #TODO: vérifier les message renvoyer
 class Com():
+    """
+    Classe Com: Gère la communication entre différents processus en utilisant un bus d'événements, des messages horodatés, et un algorithme de passage de jeton pour la section critique.
+
+    Attributs:
+    ----------
+    npProcess : int
+        Nombre de processus.
+    horloge : int
+        Horloge logique pour l'horodatage des événements.
+    lockHorloge : Lock
+        Verrou pour protéger l'accès à l'horloge.
+    haveToken : Lock
+        Verrou pour indiquer si le processus possède le jeton.
+    waitToken : Lock
+        Verrou pour attendre le jeton.
+    cmptSync : int
+        Compteur de synchronisation.
+    semaCmptSync : Semaphore
+        Sémaphore pour la synchronisation des processus.
+    mailbox : MailBox
+        Boîte aux lettres pour stocker les messages reçus.
+    alive : bool
+        Indique si le processus est actif.
+    myId : int
+        Identifiant du processus.
+    idList : list
+        Liste des ID des processus.
     
-    nbProcessCreated = 0 #A Supprimer
+    Méthodes:
+    ---------
+    initialize():
+        Initialisation du processus à appeler avant toute les autre méthodes
+    
+    getNbProcess() -> int:
+        Retourne le nombre de processus.
+
+    getMyId() -> int:
+        Retourne l'identifiant du processus actuel.
+
+    inc_clock(val=0):
+        Incrémente l'horloge logique du processus en prenant en compte une valeur externe.
+
+    getClock() -> int:
+        Retourne la valeur de l'horloge logique du processus.
+
+    broadcast(o: object):
+        Diffuse un message à tous les processus avec horodatage.
+
+    onBroadcast(m: BroadcastMessage):
+        Réceptionne et traite un message diffusé par un autre processus.
+
+    sendTo(o: object, to: int):
+        Envoie un message direct à un autre processus.
+
+    onReceive(m: MessageTo):
+        Réceptionne un message direct et l'ajoute à la boîte aux lettres.
+
+    sendToken():
+        Envoie le jeton au processus suivant.
+
+    onToken(t: Token):
+        Traite la réception du jeton et gère la section critique.
+
+    requestSC():
+        Demande l'accès à la section critique (attente du jeton).
+
+    releaseSC():
+        Libère la section critique et passe le jeton.
+
+    synchronize():
+        Synchronise les horloges des processus.
+
+    onSync(s: MessageSync):
+        Réceptionne un message de synchronisation et met à jour l'horloge.
+
+    broadcastSync(o: object, sender: int) -> BroadcastMessageSyncro:
+        Diffuse un message de synchronisation à tous les processus.
+
+    onBroadcastSyncro(m: BroadcastMessageSyncro):
+        Traite la réception d'un message de synchronisation diffusé.
+
+    sendToSync(o: object, to: int):
+        Envoie un message de synchronisation direct à un autre processus.
+
+    recevFromSync(msg: MessageToSynchro, sender: int):
+        Traite la réception d'un message de synchronisation direct.
+
+    onMessageToSynchro(m: MessageToSynchro):
+        Traite la réception d'un message direct de synchronisation.
+
+    choseId() -> int:
+        Choisit un identifiant unique pour le processus actuel.
+
+    onChoseId(m: ChoseId):
+        Traite la réception d'une proposition d'ID d'un autre processus.
+
+    stop():
+        Arrête le processus en le mettant hors service.
+    """
+    
     def __init__(self, npProcess):
         log("init com",3)
         PyBus.Instance().register(self, self)
@@ -16,7 +114,7 @@ class Com():
         self.idList = []
         
         self.npProcess = npProcess
-        #self.lockIdList = Lock()
+        self.lockIdList = Lock()
         
         
         self.horloge = 0
@@ -31,6 +129,7 @@ class Com():
         self.alive = True
         
         self.myId = -1
+        self.tempId = 0
         
         
     def initialize(self):
@@ -159,13 +258,14 @@ class Com():
         msg=self.mailbox.getMsgSyncro()
         log(isinstance(msg, MessageToSynchro), 4)
         
-    def recevFromSync(self, msg, sender):
+    def recevFromSync(self, sender): #A modifier
         self.inc_clock()
         msg=self.mailbox.getMsgSyncro()
         log(str(self.getMyId()) + " recieved from " +str(msg.getSender())+ " syncro: " + msg.getMessage() + " estampile: " + str(msg.getEstampille()),3)
         log(isinstance(msg, MessageToSynchro),4)
         ack=MessageToSynchro("ack",self.getClock(),self.myId,sender)
         PyBus.Instance().post(ack)
+        return msg
         
     @subscribe(threadMode = Mode.PARALLEL, onEvent=MessageToSynchro)
     def onMessageToSynchro(self, m):
@@ -174,26 +274,27 @@ class Com():
             self.inc_clock(m.getEstampille())
             self.mailbox.addMsgSyncro(m)
     
-    def choseId(self):
-        myTry = randrange(255)
-        log("my try: "+str(myTry))
-        PyBus.Instance().post(ChoseId(myTry))
-        sleep(4)
-        #assert(len(self.idList)==self.npProcess)
-        #with self.lockIdList:
-        self.idList.sort()
-        for i in range(len(self.idList)):
-            if self.idList[i]==myTry:
-                return i
+    def choseId(self): #bug: n'assure pas un id unique
+        while True:
+            myTry = randrange(255)
+            log("my try: "+str(myTry))
+            PyBus.Instance().post(ChoseId(myTry))
+            sleep(2)
+            with self.lockIdList:
+                self.idList.sort()
+                for i in range(len(self.idList)):
+                    if self.idList[i]==myTry:
+                        return i
         
     @subscribe(threadMode = Mode.PARALLEL, onEvent=ChoseId)
     def onChoseId(self, m):
         log("receive try: "+ str(m.myTry))
-        #with self.lockIdList:
-        self.idList.append(m.myTry)
-        
-        
-    
+        with self.lockIdList:
+            if m.myTry in self.idList:
+                self.idList.remove(m.myTry)
+            else:
+                self.idList.append(m.myTry)
+
     def stop(self):
         self.alive = False
 
