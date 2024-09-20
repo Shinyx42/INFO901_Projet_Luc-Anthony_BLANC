@@ -1,6 +1,6 @@
 from pyeventbus3.pyeventbus3 import *
 from Messages import *
-from threading import Lock
+from threading import Lock, Semaphore
 from Debug import log
 from time import sleep
 #TODO: vérifier les message renvoyer
@@ -21,7 +21,7 @@ class Com():
         self.haveToken = Lock()
         self.waitToken = Lock()
         self.cmptSync = 0
-        self.lockCmptSync = Lock()
+        self.semaCmptSync = Semaphore(0)
         
         self.mailbox = MailBox()
         
@@ -94,25 +94,23 @@ class Com():
             self.waitToken.release()
             self.haveToken.release()
             
-    def synchronize(self): #A corriger
+    def synchronize(self): #A verifier
         self.inc_clock()
         PyBus.Instance().post(MessageSync(self.getClock(),self.getMyId()))
-        self.lockCmptSync.acquire()
-        while self.alive and self.cmptSync < self.npProcess: #TOOD
-            self.lockCmptSync.release()
-            sleep(0.5)
-            self.lockCmptSync.acquire()
-        self.cmptSync -= self.npProcess
-        assert(self.cmptSync>=0 or not self.alive)
-        self.lockCmptSync.release()
+        #sleep(1)
+        for _ in range(self.npProcess):
+            self.semaCmptSync.acquire(timeout=2)
+            log(str(self.getMyId())+" acquire a semaCmptSync "+" cmpt="+str(self.cmptSync),3)
         log(str(self.getMyId())+" is synchronized!",3)
         
     @subscribe(threadMode = Mode.PARALLEL, onEvent=MessageSync)
     def onSync(self, s):
-        self.lockCmptSync.acquire()
+        
+        self.semaCmptSync.release()
         self.cmptSync +=1
-        self.lockCmptSync.release()
         log(str(self.getMyId())+" receive synchro from "+str(s.getSender())+" cmpt="+str(self.cmptSync),3)
+        if self.cmptSync == self.npProcess:
+            self.cmptSync = 0
         self.inc_clock(s.getEstampille()) 
         
     def broadcastSync(self, o,sender): #A modifier

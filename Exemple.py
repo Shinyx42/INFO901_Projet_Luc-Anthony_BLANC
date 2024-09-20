@@ -23,6 +23,7 @@ class Process(Thread):
 
     def run(self):
         loop = 0
+        #sleep(1)
         while self.alive:
             msg = Message() #A changer
             print(self.getName() + " Loop: " + str(loop) + " id:" + str(self.myId))
