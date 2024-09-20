@@ -49,7 +49,7 @@ class Process(Thread):
                 self.com.recevFromSync(msg, 2)
                
                 self.com.sendToSync("2 est OK pour jouer, on se synchronise et c'est parti!",1)
-                    
+                self.com.mailbox.flush()
                 self.com.synchronize()
                     
                 self.com.requestSC()
@@ -66,7 +66,7 @@ class Process(Thread):
                 if not self.com.mailbox.isEmpty():
                     self.com.mailbox.getMsg()
                     self.com.recevFromSync(msg, 0)
-
+                    self.com.mailbox.flush()
                     self.com.synchronize()
                     
                     self.com.requestSC()
@@ -81,7 +81,7 @@ class Process(Thread):
             if self.getName() == "P2":
                 self.com.recevFromSync(msg, 0)
                 self.com.sendToSync("OK", 0)
-
+                self.com.mailbox.flush()
                 self.com.synchronize()
                     
                 self.com.requestSC()
@@ -93,6 +93,7 @@ class Process(Thread):
                     print(str(msg.getSender())+" à eu le jeton en premier")
                 self.com.releaseSC()
             if self.getName() == "P3":
+                self.com.mailbox.flush()
                 self.com.synchronize()
             loop+=1
         print(self.getName() + " stopped")

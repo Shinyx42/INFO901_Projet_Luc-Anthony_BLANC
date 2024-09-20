@@ -20,7 +20,7 @@ class BroadcastMessage(Message):
     def __init__(self, message, estampille, sender):
         super().__init__(message, estampille, sender)
         
-class BroadcastMessageSyncro(Message):
+class BroadcastMessageSyncro(BroadcastMessage):
     def __init__(self, message, estampille, sender):
         super().__init__(message, estampille, sender)
         
@@ -34,6 +34,10 @@ class MessageTo(Message):
     
     def getReciever(self):
         return self.reciever
+
+class MessageToSynchro(MessageTo):
+    def __init__(self, message, estampille, sender, reciever):
+        super().__init__(message, estampille, sender, reciever)
 
 class Token():
     def __init__(self, nextId):

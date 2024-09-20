@@ -107,7 +107,6 @@ class Com():
         
     @subscribe(threadMode = Mode.PARALLEL, onEvent=MessageSync)
     def onSync(self, s):
-        
         self.semaCmptSync.release()
         self.cmptSync +=1
         log(str(self.getMyId())+" receive synchro from "+str(s.getSender())+" cmpt="+str(self.cmptSync),3)
@@ -126,8 +125,7 @@ class Com():
         else:
             log(str(self.getMyId())+" is alive? "+ str(self.alive),3)
             msg = self.mailbox.getMsgSyncro()
-            assert(isinstance(msg, BroadcastMessageSyncro))
-            o = msg.getMessage()
+            log(isinstance(msg, BroadcastMessageSyncro),4)
             self.synchronize()
             return msg
             
@@ -140,9 +138,27 @@ class Com():
             self.mailbox.addMsgSyncro(m)
             
     def sendToSync(self, o, to):
-        pass
+        self.inc_clock()
+        msg=MessageToSynchro(o,self.getClock(),self.myId,to)
+        log(str(self.getMyId()) + " message to " +str(to)+ " syncro: " + o + " estampile: " + str(msg.getEstampille()),3)
+        PyBus.Instance().post(msg)
+        msg=self.mailbox.getMsgSyncro()
+        log(isinstance(msg, MessageToSynchro), 4)
+        
     def recevFromSync(self, msg, sender):
-        pass
+        self.inc_clock()
+        msg=self.mailbox.getMsgSyncro()
+        log(str(self.getMyId()) + " recieved from " +str(msg.getSender())+ " syncro: " + msg.getMessage() + " estampile: " + str(msg.getEstampille()),3)
+        log(isinstance(msg, MessageToSynchro),4)
+        ack=MessageToSynchro("ack",self.getClock(),self.myId,sender)
+        PyBus.Instance().post(ack)
+        
+    @subscribe(threadMode = Mode.PARALLEL, onEvent=MessageToSynchro)
+    def onMessageToSynchro(self, m):
+        if m.isReciever(self.getMyId()):
+            log(str(self.getMyId()) + ' Processes messageTo synchro: ' + m.getMessage() + " estampile: " + str(m.getEstampille()) + " from " + str(m.getSender()),3)
+            self.inc_clock(m.getEstampille())
+            self.mailbox.addMsgSyncro(m)
     
     def stop(self):
         self.alive = False
@@ -157,7 +173,12 @@ class MailBox():
     
     def isEmpty(self):
         return self.container == [] #mutex?
-        
+    
+    def flush(self):
+        while not self.isEmpty():
+            msg=self.getMsg()
+            log("FLUSH: " + msg.getMessage() + " from " + str(msg.getSender()),3)
+    
     def getMsg(self):
         with self.lockContainer:
             return self.container.pop(0)
@@ -173,10 +194,13 @@ class MailBox():
             self.semaMsgSynchro.release()
             log(self.msgSyncro, 4)
         
-    def getMsgSyncro(self):
+    def getMsgSyncro(self): #A ameliorer
         self.semaMsgSynchro.acquire(timeout=2)
         with self.lockMsgSynchro:
-            return self.msgSyncro.pop(0)
+            if self.haveMsgSyncro():
+                return self.msgSyncro.pop(0)
+            else:
+                return Message()
     
     def haveMsgSyncro(self):
         return self.msgSyncro != []
