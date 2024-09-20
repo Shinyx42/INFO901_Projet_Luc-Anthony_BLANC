@@ -1,4 +1,5 @@
-LOGLVL = 0
+#Luc-Anthony BLANC
+LOGLVL = 0 #Modifiable pour avoir plus ou moins de logs
 
 from datetime import datetime
 

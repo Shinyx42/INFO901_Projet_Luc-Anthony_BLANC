@@ -1,3 +1,4 @@
+#Luc-Anthony BLANC
 from threading import Lock, Thread
 
 from time import sleep

@@ -1,3 +1,4 @@
+#Luc-Anthony BLANC
 class Message():
     def __init__(self, message="", estampille=0, sender=0):
         self.message=message
