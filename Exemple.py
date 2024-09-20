@@ -3,17 +3,16 @@ from threading import Lock, Thread
 from time import sleep
 
 from Com import Com
-from Messages import Message
+
 class Process(Thread):
     
-    def __init__(self,name, nbProcess):  #Pas npProcess?
+    def __init__(self,name, nbProcess): 
         Thread.__init__(self)
 
         self.com = Com(nbProcess)
-        
         self.nbProcess = self.com.getNbProcess()
 
-        self.myId = self.com.getMyId()
+        self.myId = -1
         self.setName(name)
 
 
@@ -23,18 +22,14 @@ class Process(Thread):
 
     def run(self):
         loop = 0
-        #sleep(1)
+        self.com.initialize()
+        self.myId = self.com.getMyId()
         msg = self.com.broadcastSync("test",3)
         print(msg.getMessage() + " from " + str(msg.getSender()) + " to " + str(self.com.getMyId()))
         
         while self.alive:
-            #msg = Message() #A changer
             print(self.getName() + " Loop: " + str(loop) + " id:" + str(self.myId))
             print(self.getName() + " Horloge: " + str(self.com.getClock()))
-            #while not self.com.mailbox.isEmpty():
-            #    msg=self.com.mailbox.getMsg()
-            #    print(self.getName() + " get " + msg.getMessage() + " from " + str(msg.getSender()))
-            sleep(1)
             self.com.inc_clock()
             self.com.inc_clock()
             if self.getName() == "P1":

@@ -1,4 +1,4 @@
-LOGLVL = 4
+LOGLVL = 0
 
 from datetime import datetime
 

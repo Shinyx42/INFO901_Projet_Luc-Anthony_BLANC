@@ -2,7 +2,9 @@ from pyeventbus3.pyeventbus3 import *
 from Messages import *
 from threading import Lock, Semaphore
 from Debug import log
-from time import sleep
+from time import sleep, time
+from random import randrange
+
 #TODO: vérifier les message renvoyer
 class Com():
     
@@ -11,10 +13,11 @@ class Com():
         log("init com",3)
         PyBus.Instance().register(self, self)
         
-        #A Modifier
+        self.idList = []
+        
         self.npProcess = npProcess
-        self.myId = Com.nbProcessCreated
-        Com.nbProcessCreated +=1
+        #self.lockIdList = Lock()
+        
         
         self.horloge = 0
         self.lockHorloge = Lock()
@@ -26,9 +29,19 @@ class Com():
         self.mailbox = MailBox()
         
         self.alive = True
-        if self.myId == npProcess-1:
-            self.sendToken()
         
+        self.myId = -1
+        
+        
+    def initialize(self):
+        sleep(2)
+        log("initialize")
+        self.myId = self.choseId()
+        log(str(self.myId))
+        self.synchronize()
+        if self.myId == 0:
+            self.sendToken()
+    
     def getNbProcess(self):
         return self.npProcess
         
@@ -71,6 +84,7 @@ class Com():
             
     def sendToken(self):
         t = Token((self.myId+1)%self.npProcess)
+        log("token",4)
         if self.alive:
             PyBus.Instance().post(t)
     
@@ -159,6 +173,26 @@ class Com():
             log(str(self.getMyId()) + ' Processes messageTo synchro: ' + m.getMessage() + " estampile: " + str(m.getEstampille()) + " from " + str(m.getSender()),3)
             self.inc_clock(m.getEstampille())
             self.mailbox.addMsgSyncro(m)
+    
+    def choseId(self):
+        myTry = randrange(255)
+        log("my try: "+str(myTry))
+        PyBus.Instance().post(ChoseId(myTry))
+        sleep(4)
+        #assert(len(self.idList)==self.npProcess)
+        #with self.lockIdList:
+        self.idList.sort()
+        for i in range(len(self.idList)):
+            if self.idList[i]==myTry:
+                return i
+        
+    @subscribe(threadMode = Mode.PARALLEL, onEvent=ChoseId)
+    def onChoseId(self, m):
+        log("receive try: "+ str(m.myTry))
+        #with self.lockIdList:
+        self.idList.append(m.myTry)
+        
+        
     
     def stop(self):
         self.alive = False
