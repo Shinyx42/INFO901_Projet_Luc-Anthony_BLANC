@@ -24,8 +24,11 @@ class Process(Thread):
     def run(self):
         loop = 0
         #sleep(1)
+        msg = self.com.broadcastSync("test",3)
+        print(msg.getMessage() + " from " + str(msg.getSender()) + " to " + str(self.com.getMyId()))
+        
         while self.alive:
-            msg = Message() #A changer
+            #msg = Message() #A changer
             print(self.getName() + " Loop: " + str(loop) + " id:" + str(self.myId))
             print(self.getName() + " Horloge: " + str(self.com.getClock()))
             #while not self.com.mailbox.isEmpty():

@@ -101,6 +101,8 @@ class Com():
         for _ in range(self.npProcess):
             self.semaCmptSync.acquire(timeout=2)
             log(str(self.getMyId())+" acquire a semaCmptSync "+" cmpt="+str(self.cmptSync),3)
+            if not self.alive:
+                return
         log(str(self.getMyId())+" is synchronized!",3)
         
     @subscribe(threadMode = Mode.PARALLEL, onEvent=MessageSync)
@@ -113,7 +115,7 @@ class Com():
             self.cmptSync = 0
         self.inc_clock(s.getEstampille()) 
         
-    def broadcastSync(self, o,sender): #A modifier
+    def broadcastSync(self, o,sender): #A verifier
         if self.getMyId() == sender:
             self.inc_clock()
             msg=BroadcastMessageSyncro(o,self.getClock(),self.myId)
@@ -122,9 +124,9 @@ class Com():
             self.synchronize()
             return msg
         else:
-            while self.alive and not self.mailbox.haveMsgSyncro: #TOOD
-                sleep(0.5)
+            log(str(self.getMyId())+" is alive? "+ str(self.alive),3)
             msg = self.mailbox.getMsgSyncro()
+            assert(isinstance(msg, BroadcastMessageSyncro))
             o = msg.getMessage()
             self.synchronize()
             return msg
@@ -149,8 +151,9 @@ class MailBox():
     def __init__(self):
         self.container = []
         self.lockContainer = Lock()
-        self.msgSyncro = None
-        self.haveMsgSyncro = False
+        self.msgSyncro = []
+        self.lockMsgSynchro = Lock()
+        self.semaMsgSynchro = Semaphore(0)
     
     def isEmpty(self):
         return self.container == [] #mutex?
@@ -165,9 +168,15 @@ class MailBox():
             log(self.container, 4)
         
     def addMsgSyncro(self, msg):
-        self.msgSyncro = msg
-        self.haveMsgSyncro = True
+        with self.lockMsgSynchro:
+            self.msgSyncro.append(msg)
+            self.semaMsgSynchro.release()
+            log(self.msgSyncro, 4)
         
     def getMsgSyncro(self):
-        self.haveMsgSyncro = False
-        return self.msgSyncro
+        self.semaMsgSynchro.acquire(timeout=2)
+        with self.lockMsgSynchro:
+            return self.msgSyncro.pop(0)
+    
+    def haveMsgSyncro(self):
+        return self.msgSyncro != []
